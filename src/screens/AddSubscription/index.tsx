@@ -2,18 +2,19 @@ import { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  Button,
+  Pressable,
   StyleSheet,
   ScrollView,
   Alert,
-  Pressable,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useSubscriptions } from "../../hooks/useSubscriptions";
-import { BillingCycle } from "../../lib/types";
-import { RootStackParamList } from "../../lib/navigation.types";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSubscriptions } from "../../hooks/useSubscriptions";
+import { RootStackParamList } from "../../lib/navigation.types";
+import { theme } from "../../lib/theme";
+import { BillingCycle } from "../../lib/types";
+import { Field, TextField } from "../../components/Forms";
+import { PrimaryButton } from "../../components/Buttons";
 
 const BILLING_CYCLES: { label: string; value: BillingCycle }[] = [
   { label: "Weekly", value: "weekly" },
@@ -70,78 +71,85 @@ export default function AddSubscriptionScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Netflix"
-        value={name}
-        onChangeText={setName}
-      />
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <Field label="Name">
+        <TextField placeholder="Netflix" value={name} onChangeText={setName} />
+      </Field>
 
-      <Text style={styles.label}>Price</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="15.99"
-        keyboardType="decimal-pad"
-        value={price}
-        onChangeText={setPrice}
-      />
-
-      <Text style={styles.label}>Currency</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="USD"
-        autoCapitalize="characters"
-        maxLength={3}
-        value={currency}
-        onChangeText={setCurrency}
-      />
-
-      <Text style={styles.label}>Billing cycle</Text>
-      <View style={styles.cycleRow}>
-        {BILLING_CYCLES.map((cycle) => (
-          <Pressable
-            key={cycle.value}
-            style={[
-              styles.cycleButton,
-              billingCycle === cycle.value && styles.cycleButtonActive,
-            ]}
-            onPress={() => setBillingCycle(cycle.value)}
-          >
-            <Text
-              style={[
-                styles.cycleButtonText,
-                billingCycle === cycle.value && styles.cycleButtonTextActive,
-              ]}
-            >
-              {cycle.label}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={styles.row}>
+        <View style={styles.rowItem}>
+          <Field label="Price">
+            <TextField
+              placeholder="15.99"
+              keyboardType="decimal-pad"
+              value={price}
+              onChangeText={setPrice}
+            />
+          </Field>
+        </View>
+        <View style={styles.rowItemSmall}>
+          <Field label="Currency">
+            <TextField
+              placeholder="USD"
+              autoCapitalize="characters"
+              maxLength={3}
+              value={currency}
+              onChangeText={setCurrency}
+            />
+          </Field>
+        </View>
       </View>
 
-      <Text style={styles.label}>Next billing date</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="2026-08-15"
-        value={nextBillingDate}
-        onChangeText={setNextBillingDate}
-      />
+      <Field label="Billing cycle">
+        <View style={styles.cycleRow}>
+          {BILLING_CYCLES.map((cycle) => {
+            const active = billingCycle === cycle.value;
+            return (
+              <Pressable
+                key={cycle.value}
+                style={[styles.cycleButton, active && styles.cycleButtonActive]}
+                onPress={() => setBillingCycle(cycle.value)}
+              >
+                <Text
+                  style={[
+                    styles.cycleButtonText,
+                    active && styles.cycleButtonTextActive,
+                  ]}
+                >
+                  {cycle.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Field>
 
-      <Text style={styles.label}>Category (optional)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Entertainment"
-        value={category}
-        onChangeText={setCategory}
-      />
+      <Field label="Next billing date">
+        <TextField
+          placeholder="2026-08-15"
+          value={nextBillingDate}
+          onChangeText={setNextBillingDate}
+        />
+      </Field>
 
-      <View style={styles.saveButton}>
-        <Button
-          title={saving ? "Saving..." : "Save"}
+      <Field label="Category (optional)">
+        <TextField
+          placeholder="Entertainment"
+          value={category}
+          onChangeText={setCategory}
+        />
+      </Field>
+
+      <View style={styles.saveButtonWrap}>
+        <PrimaryButton
+          title="Save subscription"
           onPress={handleSave}
-          disabled={saving || !isValid}
+          disabled={!isValid}
+          loading={saving}
         />
       </View>
     </ScrollView>
@@ -149,29 +157,33 @@ export default function AddSubscriptionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 60 },
-  label: { fontSize: 14, color: "#666", marginBottom: 6, marginTop: 16 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  cycleRow: { flexDirection: "row", gap: 8 },
+  flex: { flex: 1, backgroundColor: theme.colors.background },
+  container: { padding: theme.spacing.lg, paddingBottom: 60 },
+
+  row: { flexDirection: "row", gap: theme.spacing.md },
+  rowItem: { flex: 2 },
+  rowItemSmall: { flex: 1 },
+
+  cycleRow: { flexDirection: "row", gap: theme.spacing.sm },
   cycleButton: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     alignItems: "center",
   },
   cycleButtonActive: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
-  cycleButtonText: { color: "#333", fontSize: 13 },
-  cycleButtonTextActive: { color: "#fff", fontWeight: "600" },
-  saveButton: { marginTop: 32 },
+  cycleButtonText: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  cycleButtonTextActive: { color: "#FFFFFF", fontWeight: "600" },
+
+  saveButtonWrap: { marginTop: theme.spacing.md },
 });

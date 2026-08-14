@@ -4,7 +4,7 @@ import { useAuth } from "./src/hooks/useAuth";
 
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import LoginScreen from "./src/screens/LoginScreen";
+import LoginScreen from "./src/screens/Login";
 import SubscriptionsListScreen from "./src/screens/SubscriptionList";
 import AddSubscriptionScreen from "./src/screens/AddSubscription";
 import { RootStackParamList } from "./src/lib/navigation.types";

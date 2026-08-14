@@ -1,3 +1,4 @@
+import { useLayoutEffect } from "react";
 import {
   View,
   Text,
@@ -5,18 +6,16 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  ListRenderItemInfo,
-  Pressable,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "../../lib/navigation.types";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
 import { useSummary } from "../../hooks/useSummary";
-import { useLayoutEffect } from "react";
-import { useNavigation } from "@react-navigation/native";
-import { SubscriptionListItem } from "./components/SubscriptionListRow";
-import { Subscription } from "../../lib/types";
-import { RootStackParamList } from "../../lib/navigation.types";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { theme } from "../../lib/theme";
+import { IconButton } from "../../components/Buttons";
+import { SubscriptionListRow } from "./components/SubscriptionListRow";
 
 export default function SubscriptionsListScreen() {
   const navigation =
@@ -31,50 +30,87 @@ export default function SubscriptionsListScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={() => navigation.navigate("AddSubscription")}>
-          <MaterialIcons name="add" size={24} color="black" />
-        </Pressable>
+        <IconButton
+          name="add"
+          onPress={() => navigation.navigate("AddSubscription")}
+        />
       ),
     });
   }, [navigation]);
-
-  if (subsLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
 
   const handleRefresh = () => {
     refetch();
     refetchSummary();
   };
 
-  const renderItem = ({ item }: ListRenderItemInfo<Subscription>) => (
-    <SubscriptionListItem subscription={item} />
-  );
+  if (subsLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Per month</Text>
-        <Text style={styles.summaryValue}>
-          {summaryLoading ? "..." : `$${summary?.monthlyTotal ?? 0}`}
-        </Text>
+        <View style={styles.summaryPrimary}>
+          <Text style={styles.summaryLabel}>Monthly spend</Text>
+          <Text style={styles.summaryValue}>
+            {summaryLoading ? "—" : `$${summary?.monthlyTotal ?? 0}`}
+          </Text>
+        </View>
+
+        <View style={styles.summaryDivider} />
+
+        <View style={styles.summarySecondary}>
+          <Text style={styles.summarySecondaryLabel}>Yearly</Text>
+          <Text style={styles.summarySecondaryValue}>
+            {summaryLoading ? "—" : `$${summary?.yearlyTotal ?? 0}`}
+          </Text>
+        </View>
+
+        <View style={styles.summarySecondary}>
+          <Text style={styles.summarySecondaryLabel}>Active</Text>
+          <Text style={styles.summarySecondaryValue}>
+            {summaryLoading ? "—" : (summary?.activeCount ?? 0)}
+          </Text>
+        </View>
       </View>
+
+      <Text style={styles.sectionLabel}>Upcoming</Text>
 
       <FlatList
         data={subscriptions}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={subsLoading} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={subsLoading}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.accent}
+          />
         }
-        renderItem={renderItem}
+        renderItem={({ item, index }) => (
+          <SubscriptionListRow
+            subscription={item}
+            isLast={index === subscriptions.length - 1}
+          />
+        )}
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            No subscriptions yet — add your first one
-          </Text>
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconWrap}>
+              <Ionicons
+                name="wallet-outline"
+                size={28}
+                color={theme.colors.textMuted}
+              />
+            </View>
+            <Text style={styles.empty}>No subscriptions yet</Text>
+            <Text style={styles.emptySubtext}>
+              Tap the + button to add your first one
+            </Text>
+          </View>
         }
       />
     </View>
@@ -82,25 +118,87 @@ export default function SubscriptionsListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: theme.colors.background,
+  },
+
   summaryCard: {
-    backgroundColor: "#f2f2f7",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  summaryLabel: { color: "#666", fontSize: 14 },
-  summaryValue: { fontSize: 28, fontWeight: "700", marginTop: 4 },
-  row: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.lg,
+    margin: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
-  name: { fontSize: 16, fontWeight: "500" },
-  date: { fontSize: 13, color: "#888", marginTop: 2 },
-  price: { fontSize: 16, fontWeight: "600" },
-  empty: { textAlign: "center", marginTop: 40, color: "#999" },
+  summaryPrimary: { flex: 1.4 },
+  summaryLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: theme.colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  summaryValue: {
+    fontFamily: theme.font.mono,
+    fontSize: 30,
+    fontWeight: "600",
+    color: theme.colors.textPrimary,
+    marginTop: 6,
+  },
+  summaryDivider: {
+    width: 1,
+    backgroundColor: theme.colors.border,
+    marginHorizontal: theme.spacing.md,
+  },
+  summarySecondary: { flex: 1, justifyContent: "center" },
+  summarySecondaryLabel: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+  },
+  summarySecondaryValue: {
+    fontFamily: theme.font.mono,
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.textPrimary,
+    marginTop: 4,
+  },
+
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: theme.colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+  },
+
+  listContent: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
+  },
+
+  emptyState: { alignItems: "center", marginTop: 72, gap: 6 },
+  emptyIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: theme.spacing.sm,
+  },
+  empty: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: theme.colors.textPrimary,
+  },
+  emptySubtext: { fontSize: 13, color: theme.colors.textSecondary },
 });

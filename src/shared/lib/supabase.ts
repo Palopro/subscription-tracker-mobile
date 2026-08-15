@@ -1,6 +1,7 @@
 import "react-native-url-polyfill/auto";
-import { createClient } from "@supabase/supabase-js";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createClient } from "@supabase/supabase-js";
 import Constants from "expo-constants";
 
 const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as string;

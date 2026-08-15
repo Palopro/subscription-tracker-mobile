@@ -1,4 +1,5 @@
-import { Pressable, Text, StyleSheet, ActivityIndicator } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
+
 import { theme } from "../../lib/theme";
 
 interface PrimaryButtonProps {

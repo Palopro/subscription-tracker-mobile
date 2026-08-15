@@ -1,34 +1,60 @@
-import { useLayoutEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
-} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
-import { RootStackParamList } from "../../lib/navigation.types";
-import { useSubscriptions } from "../../hooks/useSubscriptions";
-import { useSummary } from "../../hooks/useSummary";
-import { theme } from "../../lib/theme";
-import { IconButton } from "../../components/Buttons";
-import { SubscriptionListRow } from "./components/SubscriptionListRow";
+import { useCallback, useLayoutEffect } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+import { IconButton } from "../../../shared/components/buttons";
+import { RootStackParamList } from "../../../shared/lib/navigation.types";
+import { theme } from "../../../shared/lib/theme";
+import { useSignOut } from "../../auth/hooks/useSignOut";
+import { SubscriptionListRow } from "../components/SubscriptionListRow";
+import { useSubscriptions } from "../hooks/useSubscriptions";
+import { useSummary } from "../hooks/useSummary";
+import { Subscription } from "../types";
 
 export default function SubscriptionsListScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { subscriptions, loading: subsLoading, refetch } = useSubscriptions();
+  const {
+    subscriptions,
+    loading: subsLoading,
+    deleteSubscription,
+    refetch,
+  } = useSubscriptions();
   const {
     summary,
     loading: summaryLoading,
     refetch: refetchSummary,
   } = useSummary("USD");
 
+  const { signOut } = useSignOut();
+
+  const handleSignOutPress = useCallback(() => {
+    Alert.alert("Sign out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: signOut },
+    ]);
+  }, [signOut]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerLeft: () => (
+        <IconButton
+          name="log-out-outline"
+          color={theme.colors.textSecondary}
+          backgroundColor={theme.colors.surfaceMuted}
+          onPress={handleSignOutPress}
+        />
+      ),
       headerRight: () => (
         <IconButton
           name="add"
@@ -36,12 +62,50 @@ export default function SubscriptionsListScreen() {
         />
       ),
     });
-  }, [navigation]);
+  }, [navigation, handleSignOutPress]);
 
   const handleRefresh = () => {
     refetch();
     refetchSummary();
   };
+
+  const handleEdit = useCallback(
+    (subscription: Subscription) => {
+      navigation.navigate("AddSubscription", {
+        subscriptionId: subscription.id,
+      });
+    },
+    [navigation],
+  );
+
+  const handleDelete = useCallback(
+    (subscription: Subscription) => {
+      Alert.alert(
+        "Delete subscription",
+        `Are you sure you want to delete "${subscription.name}"?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await deleteSubscription(subscription.id);
+              } catch (err) {
+                Alert.alert(
+                  "Error",
+                  err instanceof Error
+                    ? err.message
+                    : "Could not delete subscription",
+                );
+              }
+            },
+          },
+        ],
+      );
+    },
+    [deleteSubscription],
+  );
 
   if (subsLoading) {
     return (
@@ -94,6 +158,8 @@ export default function SubscriptionsListScreen() {
         renderItem={({ item, index }) => (
           <SubscriptionListRow
             subscription={item}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
             isLast={index === subscriptions.length - 1}
           />
         )}

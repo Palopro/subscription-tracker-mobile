@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Pressable, StyleSheet } from "react-native";
+
 import { theme } from "../../lib/theme";
 
 interface IconButtonProps {

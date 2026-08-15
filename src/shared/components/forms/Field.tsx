@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+
 import { theme } from "../../lib/theme";
 
 interface FieldProps {

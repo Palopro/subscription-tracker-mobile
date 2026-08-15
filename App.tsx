@@ -1,18 +1,19 @@
-import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, View } from "react-native";
-import { useAuth } from "./src/hooks/useAuth";
-
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import LoginScreen from "./src/screens/Login";
-import SubscriptionsListScreen from "./src/screens/SubscriptionList";
-import AddSubscriptionScreen from "./src/screens/AddSubscription";
-import { RootStackParamList } from "./src/lib/navigation.types";
+import { StatusBar } from "expo-status-bar";
+import { ActivityIndicator, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+import { useAuthSession } from "./src/features/auth/hooks/useAuthSession";
+import LoginScreen from "./src/features/auth/screens/LoginScreen";
+import AddSubscriptionScreen from "./src/features/subscriptions/screens/AddSubscriptionScreen";
+import SubscriptionsListScreen from "./src/features/subscriptions/screens/SubscriptionListScreen";
+import { RootStackParamList } from "./src/shared/lib/navigation.types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const { session, loading } = useAuth();
+  const { session, loading } = useAuthSession();
 
   if (loading) {
     return (
@@ -23,40 +24,42 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <Stack.Navigator
-        screenOptions={{
-          headerShadowVisible: false,
-          headerBackButtonDisplayMode: "minimal",
-        }}
-      >
-        {session ? (
-          <>
-            <Stack.Screen
-              name="Subscriptions"
-              component={SubscriptionsListScreen}
-              options={{
-                title: "My Subscriptions",
-              }}
-            />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <Stack.Navigator
+          screenOptions={{
+            headerShadowVisible: false,
+            headerBackButtonDisplayMode: "minimal",
+          }}
+        >
+          {session ? (
+            <>
+              <Stack.Screen
+                name="Subscriptions"
+                component={SubscriptionsListScreen}
+                options={{
+                  title: "My Subscriptions",
+                }}
+              />
 
+              <Stack.Screen
+                name="AddSubscription"
+                component={AddSubscriptionScreen}
+                options={{
+                  title: "New Subscription",
+                }}
+              />
+            </>
+          ) : (
             <Stack.Screen
-              name="AddSubscription"
-              component={AddSubscriptionScreen}
-              options={{
-                title: "New Subscription",
-              }}
+              name="Login"
+              component={LoginScreen}
+              options={{ headerShown: false }}
             />
-          </>
-        ) : (
-          <Stack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{ headerShown: false }}
-          />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }

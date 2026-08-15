@@ -1,20 +1,23 @@
-import { useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  Alert,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useSubscriptions } from "../../hooks/useSubscriptions";
-import { RootStackParamList } from "../../lib/navigation.types";
-import { theme } from "../../lib/theme";
-import { BillingCycle } from "../../lib/types";
-import { Field, TextField } from "../../components/Forms";
-import { PrimaryButton } from "../../components/Buttons";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+import { PrimaryButton } from "../../../shared/components/buttons";
+import { Field, TextField } from "../../../shared/components/forms";
+import { RootStackParamList } from "../../../shared/lib/navigation.types";
+import { theme } from "../../../shared/lib/theme";
+import { fetchSubscriptionById } from "../api/subscriptions.api";
+import { useSubscriptions } from "../hooks/useSubscriptions";
+import { BillingCycle } from "../types";
 
 const BILLING_CYCLES: { label: string; value: BillingCycle }[] = [
   { label: "Weekly", value: "weekly" },
@@ -22,10 +25,19 @@ const BILLING_CYCLES: { label: string; value: BillingCycle }[] = [
   { label: "Yearly", value: "yearly" },
 ];
 
+type AddSubscriptionRouteProp = RouteProp<
+  RootStackParamList,
+  "AddSubscription"
+>;
+
 export default function AddSubscriptionScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { addSubscription } = useSubscriptions();
+  const route = useRoute<AddSubscriptionRouteProp>();
+  const subscriptionId = route.params?.subscriptionId;
+  const isEditMode = !!subscriptionId;
+
+  const { addSubscription, updateSubscription } = useSubscriptions();
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -34,6 +46,47 @@ export default function AddSubscriptionScreen() {
   const [nextBillingDate, setNextBillingDate] = useState("");
   const [category, setCategory] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(isEditMode);
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: isEditMode ? "Edit Subscription" : "New Subscription",
+    });
+  }, [navigation, isEditMode]);
+
+  useEffect(() => {
+    if (!subscriptionId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const existing = await fetchSubscriptionById(subscriptionId);
+        if (cancelled) return;
+
+        setName(existing.name);
+        setPrice(String(existing.price));
+        setCurrency(existing.currency);
+        setBillingCycle(existing.billing_cycle);
+        setNextBillingDate(existing.next_billing_date);
+        setCategory(existing.category ?? "");
+      } catch (err) {
+        if (!cancelled) {
+          Alert.alert(
+            "Error",
+            err instanceof Error ? err.message : "Could not load subscription",
+          );
+          navigation.goBack();
+        }
+      } finally {
+        if (!cancelled) setLoadingExisting(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [subscriptionId, navigation]);
 
   const isValid =
     name.trim().length > 0 &&
@@ -51,14 +104,21 @@ export default function AddSubscriptionScreen() {
 
     setSaving(true);
     try {
-      await addSubscription({
+      const payload = {
         name: name.trim(),
         price: Number(price),
         currency: currency.trim().toUpperCase(),
         billing_cycle: billingCycle,
         next_billing_date: nextBillingDate,
         category: category.trim() || undefined,
-      });
+      };
+
+      if (isEditMode && subscriptionId) {
+        await updateSubscription(subscriptionId, payload);
+      } else {
+        await addSubscription(payload);
+      }
+
       navigation.goBack();
     } catch (err) {
       Alert.alert(
@@ -69,6 +129,14 @@ export default function AddSubscriptionScreen() {
       setSaving(false);
     }
   };
+
+  if (loadingExisting) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -146,7 +214,7 @@ export default function AddSubscriptionScreen() {
 
       <View style={styles.saveButtonWrap}>
         <PrimaryButton
-          title="Save subscription"
+          title={isEditMode ? "Save changes" : "Save subscription"}
           onPress={handleSave}
           disabled={!isValid}
           loading={saving}
@@ -158,6 +226,12 @@ export default function AddSubscriptionScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: theme.colors.background },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: theme.colors.background,
+  },
   container: { padding: theme.spacing.lg, paddingBottom: 60 },
 
   row: { flexDirection: "row", gap: theme.spacing.md },

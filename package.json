@@ -16,6 +16,7 @@
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.2",
+    "react-native-gesture-handler": "~2.32.0",
     "react-native-mmkv": "^4.3.2",
     "react-native-nitro-modules": "^0.36.5",
     "react-native-safe-area-context": "^5.8.0",
@@ -28,6 +29,8 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-simple-import-sort": "^14.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
     "prettier": "^3.9.6",
     "typescript": "~6.0.3"
   },
@@ -37,7 +40,17 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"App.tsx\""
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"App.tsx\"",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "private": true
 }

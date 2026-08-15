@@ -1,11 +1,16 @@
-import { memo } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { Subscription } from "../../../lib/types";
-import { theme } from "../../../lib/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { memo, useRef } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
+
+import { theme } from "../../../shared/lib/theme";
+import { Subscription } from "../types";
 
 interface SubscriptionListItemProps {
   subscription: Subscription;
   isLast?: boolean;
+  onEdit?: (subscription: Subscription) => void;
+  onDelete?: (subscription: Subscription) => void;
 }
 
 function formatDayMonth(dateStr: string): { day: string; month: string } {
@@ -26,9 +31,50 @@ function isWithinDays(dateStr: string, days: number): boolean {
 function SubscriptionListItemComponent({
   subscription,
   isLast,
+  onEdit,
+  onDelete,
 }: SubscriptionListItemProps) {
+  const swipeableRef = useRef<Swipeable>(null);
   const { day, month } = formatDayMonth(subscription.next_billing_date);
   const soon = isWithinDays(subscription.next_billing_date, 3);
+
+  const renderRightActions = (
+    _progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+  ) => {
+    const scale = dragX.interpolate({
+      inputRange: [-120, 0],
+      outputRange: [1, 0.6],
+      extrapolate: "clamp",
+    });
+
+    return (
+      <View style={styles.actionsContainer}>
+        <Pressable
+          style={[styles.actionButton, styles.editAction]}
+          onPress={() => {
+            swipeableRef.current?.close();
+            onEdit?.(subscription);
+          }}
+        >
+          <Animated.View style={{ transform: [{ scale }] }}>
+            <Ionicons name="pencil" size={18} color="#FFFFFF" />
+          </Animated.View>
+        </Pressable>
+        <Pressable
+          style={[styles.actionButton, styles.deleteAction]}
+          onPress={() => {
+            swipeableRef.current?.close();
+            onDelete?.(subscription);
+          }}
+        >
+          <Animated.View style={{ transform: [{ scale }] }}>
+            <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+          </Animated.View>
+        </Pressable>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.row}>
@@ -44,20 +90,28 @@ function SubscriptionListItemComponent({
         {!isLast && <View style={styles.connector} />}
       </View>
 
-      <View style={styles.card}>
-        <View style={styles.cardInfo}>
-          <Text style={styles.name} numberOfLines={1}>
-            {subscription.name}
+      <Swipeable
+        ref={swipeableRef}
+        renderRightActions={renderRightActions}
+        friction={2}
+        rightThreshold={40}
+        containerStyle={styles.swipeableContainer}
+      >
+        <View style={styles.card}>
+          <View style={styles.cardInfo}>
+            <Text style={styles.name} numberOfLines={1}>
+              {subscription.name}
+            </Text>
+            {subscription.category ? (
+              <Text style={styles.category}>{subscription.category}</Text>
+            ) : null}
+          </View>
+          <Text style={styles.price}>
+            {subscription.price.toFixed(2)}
+            <Text style={styles.currency}> {subscription.currency}</Text>
           </Text>
-          {subscription.category ? (
-            <Text style={styles.category}>{subscription.category}</Text>
-          ) : null}
         </View>
-        <Text style={styles.price}>
-          {subscription.price.toFixed(2)}
-          <Text style={styles.currency}> {subscription.currency}</Text>
-        </Text>
-      </View>
+      </Swipeable>
     </View>
   );
 }
@@ -100,6 +154,12 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
 
+  swipeableContainer: {
+    flex: 1,
+    marginLeft: 10,
+    marginBottom: 12,
+  },
+
   card: {
     flex: 1,
     flexDirection: "row",
@@ -111,8 +171,6 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    marginLeft: 10,
-    marginBottom: 12,
   },
   cardInfo: { flex: 1, marginRight: 8 },
   name: {
@@ -137,4 +195,19 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     color: theme.colors.textSecondary,
   },
+
+  actionsContainer: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    marginBottom: 12,
+  },
+  actionButton: {
+    width: 56,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: theme.radius.md,
+    marginLeft: 8,
+  },
+  editAction: { backgroundColor: theme.colors.accent },
+  deleteAction: { backgroundColor: "#DC2626" },
 });

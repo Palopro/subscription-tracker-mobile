@@ -1,44 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import Constants from "expo-constants";
-import { supabase } from "../lib/supabase";
 
-interface CategoryBreakdown {
-  category: string;
-  monthlyTotal: number;
-}
-
-interface SubscriptionsSummary {
-  currency: string;
-  monthlyTotal: number;
-  yearlyTotal: number;
-  activeCount: number;
-  byCategory: CategoryBreakdown[];
-  upcoming: {
-    id: string;
-    name: string;
-    price: number;
-    nextBillingDate: string;
-  }[];
-}
-
-const API_URL = Constants.expoConfig?.extra?.apiUrl as string;
-
-async function querySummary(currency: string, accessToken: string) {
-  const response = await fetch(
-    `${API_URL}/subscriptions/summary?currency=${currency}`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(`Ошибка сервера: ${response.status}`);
-  }
-
-  return response.json() as Promise<SubscriptionsSummary>;
-}
+import { supabase } from "../../../shared/lib/supabase";
+import { querySummary } from "../api/subscriptions.api";
+import { SubscriptionsSummary } from "../types";
 
 export const useSummary = (currency: string = "USD") => {
   const [summary, setSummary] = useState<SubscriptionsSummary | null>(null);
@@ -69,14 +33,14 @@ export const useSummary = (currency: string = "USD") => {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (!session) throw new Error("Нет активной сессии");
+        if (!session) throw new Error("No active session");
 
         const data = await querySummary(currency, session.access_token);
         applySummaryResult(data, null);
       } catch (err) {
         applySummaryResult(
           null,
-          err instanceof Error ? err : new Error("Неизвестная ошибка"),
+          err instanceof Error ? err : new Error("Unknown error"),
         );
       }
     },
@@ -92,7 +56,7 @@ export const useSummary = (currency: string = "USD") => {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (!session) throw new Error("Нет активной сессии");
+        if (!session) throw new Error("No active session");
 
         const data = await querySummary(currency, session.access_token);
 
@@ -103,7 +67,7 @@ export const useSummary = (currency: string = "USD") => {
         if (!cancelled) {
           applySummaryResult(
             null,
-            err instanceof Error ? err : new Error("Неизвестная ошибка"),
+            err instanceof Error ? err : new Error("Unknown error"),
           );
         }
       }

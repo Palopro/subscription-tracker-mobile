@@ -24,3 +24,22 @@ export interface NewSubscription {
   category?: string;
   notes?: string;
 }
+
+export interface CategoryBreakdown {
+  category: string;
+  monthlyTotal: number;
+}
+
+export interface SubscriptionsSummary {
+  currency: string;
+  monthlyTotal: number;
+  yearlyTotal: number;
+  activeCount: number;
+  byCategory: CategoryBreakdown[];
+  upcoming: {
+    id: string;
+    name: string;
+    price: number;
+    nextBillingDate: string;
+  }[];
+}

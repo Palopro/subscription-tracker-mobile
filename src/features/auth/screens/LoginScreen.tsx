@@ -1,16 +1,17 @@
 import { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { supabase } from "../../lib/supabase";
-import { theme } from "../../lib/theme";
-import { TextField } from "../../components/Forms";
-import { PrimaryButton } from "../../components/Buttons";
+
+import { PrimaryButton } from "../../../shared/components/buttons";
+import { TextField } from "../../../shared/components/forms";
+import { supabase } from "../../../shared/lib/supabase";
+import { theme } from "../../../shared/lib/theme";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");

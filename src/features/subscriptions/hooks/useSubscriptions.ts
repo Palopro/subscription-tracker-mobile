@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
-import { NewSubscription, Subscription } from "../lib/types";
 
-async function querySubscriptions() {
-  return supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("is_active", true)
-    .order("next_billing_date", { ascending: true });
-}
+import { supabase } from "../../../shared/lib/supabase";
+import {
+  deleteSubscriptionById,
+  insertSubscription,
+  querySubscriptions,
+  updateSubscription as apiUpdateSubscription,
+} from "../api/subscriptions.api";
+import { NewSubscription, Subscription } from "../types";
 
 export function useSubscriptions() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -49,14 +48,9 @@ export function useSubscriptions() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) throw new Error("Пользователь не авторизован");
+      if (!user) throw new Error("Not authenticated");
 
-      const { error: insertError } = await supabase
-        .from("subscriptions")
-        .insert({ ...newSub, user_id: user.id });
-
-      if (insertError) throw insertError;
-
+      await insertSubscription(newSub, user.id);
       await fetchSubscriptions(true);
     },
     [fetchSubscriptions],
@@ -64,13 +58,15 @@ export function useSubscriptions() {
 
   const deleteSubscription = useCallback(
     async (id: string) => {
-      const { error: deleteError } = await supabase
-        .from("subscriptions")
-        .delete()
-        .eq("id", id);
+      await deleteSubscriptionById(id);
+      await fetchSubscriptions(true);
+    },
+    [fetchSubscriptions],
+  );
 
-      if (deleteError) throw deleteError;
-
+  const updateSubscription = useCallback(
+    async (id: string, updates: NewSubscription) => {
+      await apiUpdateSubscription(id, updates);
       await fetchSubscriptions(true);
     },
     [fetchSubscriptions],
@@ -96,6 +92,7 @@ export function useSubscriptions() {
     error,
     refetch: () => fetchSubscriptions(true),
     addSubscription,
+    updateSubscription,
     deleteSubscription,
   };
 }
